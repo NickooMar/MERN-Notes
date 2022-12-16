@@ -27,7 +27,8 @@ const createNewUser = asyncHandler(async (req, res) => {
 
   //Check for duplicate
   const duplicate = await User.findOne({ username }).lean().exec(); //exec se utiliza cuando se pasan parametros ({username}) al modelo (User)
-  if (duplicate) res.status(409).json({ message: "Duplicate username" });
+
+  if (duplicate) return res.status(409).json({ message: "Duplicate username" });
 
   //Hash password
   const hashedPwd = await bcrypt.hash(password, 10);
@@ -64,12 +65,14 @@ const updateUser = asyncHandler(async (req, res) => {
 
   const user = await User.findById(id).exec();
 
-  if (!user) res.status(404).json({ message: "User not found" });
+  if (!user) {
+    return res.status(404).json({ message: "User not found" });
+  }
 
   // Check for duplicates
   const duplicate = await User.findOne({ username }).lean().exec();
   // Allow updates to the original user
-  if (duplicate && duplicate?._id.toString !== id) {
+  if (duplicate && duplicate?._id.toString() !== id) {
     return res.status(409).json({ message: "Duplicate usernames" });
   }
 
@@ -97,9 +100,9 @@ const deleteUser = asyncHandler(async (req, res) => {
     return res.status(400).json({ message: "User ID Required" });
   }
 
-  const notes = await Note.findOne({ user: id }).lean().exec();
+  const note = await Note.findOne({ user: id }).lean().exec();
 
-  if (notes?.length) {
+  if (note) {
     return res.status(400).json({ message: "User has assigned notes" });
   }
 
@@ -109,7 +112,7 @@ const deleteUser = asyncHandler(async (req, res) => {
     return res.status(404).json({ message: "User not found" });
   }
 
-  const result = await User.deleteOne();
+  const result = await user.deleteOne();
 
   const reply = `Username ${result.username} with ID ${result._id} deleted`;
 
