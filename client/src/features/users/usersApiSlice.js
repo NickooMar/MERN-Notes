@@ -6,14 +6,13 @@ const usersAdapter = createEntityAdapter({});
 const initialState = usersAdapter.getInitialState();
 
 export const usersApiSlice = apiSlice.injectEndpoints({
-  endpoints: (builder) => ({ 
-    getUsers: builder.query({  // Se crea un hook automaticamente
+  endpoints: (builder) => ({
+    getUsers: builder.query({
+      // Se crea un hook automaticamente
       query: () => "/users", // Especificamos el endpoint
       validateStatus: (response, result) => {
         return response.status === 200 && !result.isError;
       }, // Validamos que no existan errores al llamar a la API
-      keepUnusedDataFor: 5, // Tiempo que se quedara la información en el cache
-
       transformResponse: (responseData) => {
         // Obtenemos la respuesta de la query
         const loadedUsers = responseData.map((user) => {
@@ -24,8 +23,10 @@ export const usersApiSlice = apiSlice.injectEndpoints({
         return usersAdapter.setAll(initialState, loadedUsers); // Seteamos a todos los usuario para que todos tengan el id sin el (_) "NORMALIZADOS" y los almacenamos en el userAdapter
       },
 
-      providesTags: (result, error, arg) => { // Provedes the tags that can be invalidated
-        if (result?.ids) { //Error if a result has not ID
+      providesTags: (result, error, arg) => {
+        // Provedes the tags that can be invalidated
+        if (result?.ids) {
+          //Error if a result has not ID
           return [
             { type: "User", id: "LIST" },
             ...result.ids.map((id) => ({ type: "User", id })),
@@ -33,10 +34,39 @@ export const usersApiSlice = apiSlice.injectEndpoints({
         } else return [{ type: "User", id: "LIST" }]; // Fails Safe
       },
     }),
+
+    addNewUser: builder.mutation({
+      query: (initialUserData) => ({ // Le pasamos un valor inicial
+        url: "/users",  // A un endpoint
+        method: "POST", // Con un metodo POST
+        body: {
+          ...initialUserData, // Por ultimo pasamos el valor inicial definido anteriormente, en el body de la llamada.
+        },
+      }),
+      invalidatesTags: [{ type: "User", id: "LIST" }],
+    }),
+    updateUser: builder.mutation({
+      query: (initialUserData) => ({
+        url: "/users",
+        method: "PATCH",
+        body: {
+          ...initialUserData,
+        },
+      }),
+      invalidatesTags: (result, error, arg) => [{ type: "User", id: arg.id }],
+    }),
+    deleteUser: builder.mutation({
+      query: ({ id }) => ({
+        url: `/users`,
+        method: "DELETE",
+        body: { id },
+      }),
+      invalidatesTags: (result, error, arg) => [{ type: "User", id: arg.id }],
+    }),
   }),
 });
 
-export const { useGetUsersQuery } = usersApiSlice; // useGetUserQuery HOOK
+export const { useGetUsersQuery, useAddNewUserMutation, useUpdateUserMutation, useDeleteUserMutation } = usersApiSlice; // useGetUserQuery HOOK
 
 // Retorna el objeto resultante de la query
 export const selectUsersResult = usersApiSlice.endpoints.getUsers.select(); // Llama a getUsers definido anteriormente
