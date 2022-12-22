@@ -1,4 +1,5 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { setCredentials } from "../../features/auth/authSlice";
 
 const baseQuery = fetchBaseQuery({
   baseUrl: "http://localhost:3500",
@@ -11,10 +12,34 @@ const baseQuery = fetchBaseQuery({
     }
     return headers;
   },
-}); // Agregamos las propiedades para poder pasar el token por medio del header al backend
+}); // Por cada petición enviamos los headers pero solo si existe un token, lo enviamos al backend por medio de la propiedad authorization y con el Bearer
+
+// Refresh Token
+const baseQueryWithReauth = async (args, api, extraOptions) => {
+  let result = await baseQuery(args, api, extraOptions);
+
+  // Si obtenemos un error 403 al realizar la consulta a la baseQuery entonces llamamos a la ruta /auth/refresh y seteamos las credenciales con el resultado (nuevo token)
+  if (result?.error?.status === 403) {
+    console.log("Sending refresh token");
+
+    // Enviando Refresh token para obtener un nuevo acceso
+    const refreshResult = await baseQuery("/auth/refresh", api, extraOptions);
+
+    if (refreshResult?.data) {
+      api.dispatch(setCredentials({ ...refreshResult.data }));
+      result = await baseQuery(args, api, extraOptions);
+    } else {
+      if (refreshResult?.error?.status === 403) {
+        refreshResult.error.data.message = "Your login has expired.";
+      }
+      return refreshResult;
+    }
+  }
+  return result;
+};
 
 export const apiSlice = createApi({
-  baseQuery,
+  baseQuery: baseQueryWithReauth,
   tagTypes: ["Note", "User"],
   endpoints: (builder) => ({}),
 });

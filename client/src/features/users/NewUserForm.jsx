@@ -86,11 +86,11 @@ const NewUserForm = () => {
       <form className="form" onSubmit={onSaveUserClicked}>
         <div className="form__title-row">
           <h2>New User</h2>
-          <div className="form__action-buttons">
+          {/* <div className="form__action-buttons">
             <button className="icon-button" title="Save" disabled={!canSave}>
               <FontAwesomeIcon icon={faSave} />
             </button>
-          </div>
+          </div> */}
         </div>
         <label className="form__label" htmlFor="username">
           Username: <span className="nowrap">[3-20 letters]</span>
@@ -131,6 +131,13 @@ const NewUserForm = () => {
         >
           {options}
         </select>
+        <button
+          title="Save"
+          type="submit"
+          disabled={!canSave}
+        >
+          Guardar
+        </button>
       </form>
     </>
   );
